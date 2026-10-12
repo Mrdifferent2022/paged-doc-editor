@@ -1,0 +1,72 @@
+{
+  "name": "paged-doc-editor",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Paginated document editor (Tiptap multi-section layout, WYSIWYG page editing + server-side finalized PDF rendering)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/paged-doc-editor.git"
+  },
+  "keywords": [
+    "tiptap",
+    "editor",
+    "pagination",
+    "header-footer",
+    "pdf",
+    "vue3"
+  ],
+  "exports": {
+    ".": "./src/editor/index.js",
+    "./styles": "./src/editor/styles/editor.css",
+    "./tiptap": "./src/editor/tiptap/index.js",
+    "./templates": "./src/editor/templates/standardTemplate.js",
+    "./render": "./src/server/render.js"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "build:lib": "vite build --config vite.lib.config.js",
+    "render-server": "node server/render-server.js",
+    "test": "node tests/check-layout.mjs && node tests/check-table-render.mjs && node tests/check-img-render.mjs && node tests/check-list-render.mjs"
+  },
+  "peerDependencies": {
+    "@primevue/themes": "^4.2.4",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.2.4",
+    "vue": "^3.4.29"
+  },
+  "dependencies": {
+    "@mlightcad/cad-agent-plugin": "^1.7.1",
+    "@mlightcad/cad-html-plugin": "^1.7.1",
+    "@mlightcad/cad-pdf-plugin": "^1.7.1",
+    "@mlightcad/cad-svg-plugin": "^1.7.1",
+    "@mlightcad/cad-viewer": "^1.7.1",
+    "@mlightcad/data-model": "^1.14.12",
+    "@pdf-lib/fontkit": "^1.1.1",
+    "@tiptap/core": "^3.0.0",
+    "@tiptap/extension-highlight": "^3.30.1",
+    "@tiptap/extension-image": "^3.30.1",
+    "@tiptap/extension-table": "^3.0.0",
+    "@tiptap/extension-text-align": "^3.30.1",
+    "@tiptap/extension-text-style": "^3.30.1",
+    "@tiptap/starter-kit": "^3.0.0",
+    "@tiptap/static-renderer": "^3.0.0",
+    "@tiptap/vue-3": "^3.0.0",
+    "element-plus": "^2.14.6",
+    "pdf-lib": "^1.17.1",
+    "qrcode": "^1.5.4"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^24.0.0"
+  },
+  "devDependencies": {
+    "@primevue/themes": "^4.5.4",
+    "@vitejs/plugin-vue": "^5.2.0",
+    "express": "^4.21.0",
+    "primeicons": "^7.0.0",
+    "primevue": "^4.5.5",
+    "vite": "^5.4.0",
+    "vue": "^3.5.0"
+  }
+}

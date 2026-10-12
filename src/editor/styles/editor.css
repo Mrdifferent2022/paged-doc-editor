@@ -1,0 +1,553 @@
+/* ========== 布局骨架 ========== */
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; margin: 0; }
+body { font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif; background: #e9ebef; }
+
+.app-shell { display: flex; flex-direction: column; height: 100%; }
+
+/* 顶部工具栏 */
+.toolbar {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 16px; background: #1f2937; color: #fff;
+}
+.toolbar .title { font-weight: 600; margin-right: auto; }
+.toolbar button {
+    padding: 5px 12px; border: none; border-radius: 6px;
+    background: #3F51B5; color: #fff; cursor: pointer; font-size: 13px;
+}
+.toolbar button:disabled { background: #6b7280; cursor: wait; }
+.zoom-select { padding: 4px 8px; border-radius: 6px; border: 1px solid #4b5563; background: #374151; color: #fff; }
+
+/* 格式工具栏（Word 风格） */
+.format-bar {
+    display: flex; align-items: center; gap: 4px;
+    padding: 6px 16px; background: #fff; border-bottom: 1px solid #d8dce2;
+}
+/* 格式组：无聚焦编辑器时整组置灰 */
+.format-bar .fmt-groups { display: flex; align-items: center; gap: 4px; flex: 1; }
+.format-bar .fmt-groups.disabled { opacity: 0.45; pointer-events: none; }
+/* 紧凑模式（渐进式折叠 stage4-6）：压缩按钮内边距/间距，让小宽度下各档不溢出（坑：阈值要按实测内容宽定）
+   用容器 class 而非 @media——宿主里编辑器只是面板，viewport 宽不代表栏宽 */
+.format-bar.compact { padding: 6px 8px; }
+.format-bar.compact .p-button { padding-left: 6px; padding-right: 6px; }
+.format-bar.compact .fmt-groups { gap: 2px; }
+.format-bar.compact .sep { margin: 0 3px; }
+/* PrimeVue text 按钮默认是 Aura 主色（绿）——工具栏图标统一深灰，hover 近黑 */
+.format-bar .p-button { color: #374151; }
+.format-bar .p-button:hover { color: #111827; }
+/* PrimeVue 图标按钮：激活态 */
+.format-bar .p-button.on { background: #C5CAE9; color: #303F9F; }
+/* B/I/U/S 字形图标（primeicons v7 无此四字类，用 Word 同款字母，不依赖图标字体） */
+.mk-glyph { font-size: 13px; line-height: 1; display: inline-block; min-width: 12px; text-align: center; }
+.format-bar .sep { width: 1px; height: 18px; background: #d8dce2; margin: 0 6px; }
+
+/* ========== 右键菜单（ContextMenu）：级联层次清晰化 ========== */
+/* 分隔线：默认 1px #e2e8f0 贴边几乎不可见——加深颜色 + 上下留白，分组一目了然 */
+.p-contextmenu .p-contextmenu-separator { border-top: 1px solid #cbd5e1; margin: 4px 8px; }
+/* 子菜单面板：与父级菜单留 4px 缝 + 独立投影，两级菜单不再"糊成一块"，级联层级清晰 */
+.p-contextmenu .p-contextmenu-submenu { margin-left: 4px; box-shadow: 0 8px 24px rgba(15, 23, 42, 0.22); }
+/* 危险项（删除本节）红色 */
+.p-contextmenu-item.cm-danger .p-contextmenu-item-label,
+.p-contextmenu-item.cm-danger .p-contextmenu-item-icon { color: #dc2626; }
+/* 当前选中项（页面设置的纸张/方向）：✓ 放右端，label 全部左对齐排布整齐（li 与 a 之间有 item-content 层，不能用 >） */
+.p-contextmenu-item.cm-checked .p-contextmenu-item-link::after {
+    content: '\e909'; /* pi-check */
+    font-family: 'primeicons';
+    margin-left: auto;
+    padding-left: 16px;
+    font-size: 12px;
+    color: #3949AB;
+}
+
+/* 题注文字按钮 */
+.format-bar .cap-btn { font-size: 13px; }
+.format-bar .cap-btn:disabled { opacity: 0.4; }
+/* 渐进式折叠组的下拉按钮（字体/标题等文字 label 与图标按钮同字号） */
+.format-bar .fold-btn { font-size: 13px; }
+/* ========== 颜色下拉色板（ColorPaletteButton：渐变网格 + 自定义 RGB + 最近使用） ========== */
+/* 工具栏按钮：字形（A / 荧光笔图标）+ 底部当前色条 + caret，与其他文本按钮同款交互 */
+.cp-btn {
+    display: inline-flex; align-items: center; gap: 1px;
+    height: 26px; padding: 0 4px; border: none; border-radius: 5px;
+    background: transparent; color: #374151; cursor: pointer;
+}
+.cp-btn:hover, .cp-btn.open { background: #f0f2f5; color: #111827; }
+.cp-glyph-wrap { position: relative; display: inline-flex; width: 16px; height: 18px; align-items: center; justify-content: center; }
+.cp-glyph { font-size: 13px; line-height: 1; }
+.cp-a { font-weight: 700; font-family: Georgia, serif; }
+.cp-bar { position: absolute; left: 1px; right: 1px; bottom: 0; height: 3px; border-radius: 1px; }
+.cp-caret { font-size: 9px; margin-left: 1px; }
+/* 下拉面板（Teleport 到 body，fixed 定位由组件计算并钳在视口内）；
+   宽度钉死=色列宽（10×18+9×2+2×8=214）——自定义色卡的确定/取消按钮不许把面板撑大（用户 2026-09-04） */
+.cp-panel {
+    position: fixed; z-index: 40; width: 214px; padding: 8px; background: #fff;
+    border: 1px solid #d8dce2; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.2);
+    display: flex; flex-direction: column; gap: 6px; user-select: none;
+    box-sizing: border-box;
+}
+.cp-row { display: flex; gap: 2px; }
+.cp-grid { display: flex; gap: 2px; }
+.cp-col { display: flex; flex-direction: column; gap: 2px; }
+.cp-cell {
+    width: 18px; height: 18px; padding: 0; border: 1px solid rgba(0,0,0,.12);
+    border-radius: 3px; cursor: pointer; box-sizing: border-box;
+}
+.cp-cell:hover { outline: 2px solid #3F51B5; outline-offset: 1px; }
+.cp-cell.on { outline: 2px solid #303F9F; outline-offset: 1px; }
+/* 顶部清除行（自动/无颜色） */
+.cp-clear {
+    display: flex; align-items: center; gap: 8px; padding: 4px 6px;
+    border: none; border-radius: 5px; background: transparent; color: #374151;
+    font-size: 12px; cursor: pointer; text-align: left;
+}
+.cp-clear:hover { background: #f0f2f5; }
+.cp-clear-box { width: 16px; height: 16px; border: 1px solid #9aa1ad; border-radius: 3px; background: #fff; box-sizing: border-box; }
+.cp-clear-box.hl { background: repeating-linear-gradient(45deg, #fff 0 3px, #f3f4f6 3px 6px); }
+/* 自定义色卡 */
+.cp-actions { border-top: 1px solid #eef0f3; padding-top: 6px; }
+.cp-custom-btn {
+    display: flex; align-items: center; gap: 8px; width: 100%; padding: 4px 6px;
+    border: none; border-radius: 5px; background: transparent; color: #374151;
+    font-size: 12px; cursor: pointer; text-align: left;
+}
+.cp-custom-btn:hover { background: #f0f2f5; }
+.cp-custom { border-top: 1px solid #eef0f3; padding-top: 6px; display: flex; flex-direction: column; gap: 6px; }
+.cp-custom-row { display: flex; align-items: center; gap: 4px; }
+.cp-custom-row label { display: flex; align-items: center; gap: 2px; font-size: 12px; color: #374151; }
+.cp-custom-row input[type='number'] { width: 36px; padding: 2px 2px; border: 1px solid #d8dce2; border-radius: 4px; font-size: 12px; }
+.cp-preview { width: 22px; height: 22px; border: 1px solid rgba(0,0,0,.15); border-radius: 4px; flex: none; }
+.cp-hex { flex: 1; min-width: 0; padding: 2px 4px; border: 1px solid #d8dce2; border-radius: 4px; font-size: 11px; font-family: monospace; }
+.cp-ok, .cp-cancel {
+    padding: 2px 7px; border: 1px solid #d8dce2; border-radius: 4px;
+    background: #fff; color: #374151; font-size: 11px; cursor: pointer; flex: none;
+}
+.cp-ok { background: #3949AB; border-color: #3949AB; color: #fff; }
+.cp-ok:disabled { opacity: 0.45; cursor: default; }
+.cp-cancel:hover, .cp-ok:hover:not(:disabled) { filter: brightness(0.95); }
+/* 最近使用 */
+.cp-label { border-top: 1px solid #eef0f3; padding-top: 6px; font-size: 11px; color: #6b7280; }
+
+/* ========== 对话框 ========== */
+.dialog-mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,.4);
+    display: flex; align-items: center; justify-content: center; z-index: 10;
+}
+.dialog { background: #fff; border-radius: 8px; padding: 20px 24px; width: 400px; }
+.dialog h3 { margin-top: 0; }
+.dialog-tip { margin: -6px 0 12px; font-size: 12px; color: #6b7280; }
+.form-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.form-row label { width: 80px; font-size: 14px; }
+.form-row input { flex: 1; padding: 6px 8px; border: 1px solid #d1d5db; border-radius: 4px; }
+.dialog-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+.dialog-actions button { padding: 6px 16px; border: 1px solid #d1d5db; border-radius: 6px; background: #fff; cursor: pointer; }
+.dialog-actions button:first-child { background: #3F51B5; color: #fff; border-color: #3F51B5; }
+
+/* ========== 悬浮层（2026-09-22 穿透修复） ========== */
+/* main.sections 的壳：relative 给悬浮层做定位锚；flex 链保持 min-height:0（长文档不顶高父级），
+   宿主 :deep(main.sections){flex:1} 规则不受影响（main 仍在壳内 flex 拉伸） */
+.sections-shell { position: relative; flex: 1; min-height: 0; display: flex; flex-direction: column; }
+/* 悬浮层：表格手柄/图片工具条/裁剪框统一 Teleport 到此（原 Teleport body+fixed 跳出容器，
+   编辑器 overflow 零裁剪力，锚点横向滚出后手柄贴窗口左缘画到宿主目录树上——云上实测）。
+   overflow:hidden 像素级裁剪出界部分；挂在 zoom 容器与 .sheet（paint containment）之外，坑#35 不踩 */
+.floating-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+/* 层内可交互子元素恢复指针事件（描边 .cell-selection-outline / 压暗 .crop-frame 自身规则已 none，不恢复） */
+.floating-layer .table-handle,
+.floating-layer .cell-handle,
+.floating-layer .img-menu,
+.floating-layer .crop-win,
+.floating-layer .crop-handle { pointer-events: auto; }
+
+/* ========== Notion-like 纸张外观 ========== */
+/* 灰底必须挂滚动容器自身：PoC 里 body 也是灰的看不出差别，宿主（standard）body 是白色，
+   只靠 body 灰底会在宿主里变成白底 */
+.sections { flex: 1; overflow: auto; padding: 30px 16px 60px; background: #e9ebef; }
+/* 节间距 = 页间灰缝高（28px），整篇文档的页与页、节与节间隔一致 */
+.section-wrapper { position: relative; margin-bottom: 28px; }
+/* 滚动内容内层：宽=最宽纸张（max-content），窄容器时居中、宽容器时左缘贴 0（左溢出才可滚到） */
+.sections-inner { width: max-content; min-width: 100%; margin: 0 auto; }
+/* 节 holder（懒挂载的 IO 观察对象）：宽度必须跟随内容（纸张宽），不能只是容器宽——
+   否则纸张比 holder 宽时居中溢出 holder 两侧，横向滚动后 holder 与视口失去交叉，
+   IntersectionObserver 把正在看的节卸载成空白占位（横向滚白屏、带横向偏移时纵向也挂不上）。
+   各 holder 在 sections-inner 里居中 → 所有纸张共享同一内容中轴线（PDF 阅读器混排纸张同款） */
+.sections-inner > div { width: fit-content; min-width: 100%; margin: 0 auto; }
+
+/* 纸张：固定纸宽居中 + 阴影；内容连续流动（Notion-like），不定版分页 */
+.sheet {
+    margin: 0 auto;
+    background: #fff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+    display: flex; flex-direction: column;
+    position: relative; /* 页眉/页脚条绝对定位进上下边距区（与 Chromium 打印模板帧一致：页眉条在页顶、页脚条在下边距框顶） */
+}
+.section-editor { flex: 1; }
+.section-editor .ProseMirror {
+    outline: none;
+    min-height: 100%;
+    /* 正文显式宋体：原来不设字体继承 body 的雅黑，工具栏默认显示"宋体"与实际渲染不一致（用户 2026-08-27 定：全文档宋体） */
+    font-family: SimSun, '宋体', serif;
+    font-size: 11pt; line-height: 1.6; /* 2026-09-07 用户：正文 12→11pt（渲染侧 sharedCss=本文件自动跟随）；表格 10.5pt/题注 10.5pt 不动 */
+}
+
+/* 页眉/页脚预览条（编辑态只展示一份，定版渲染时每页重复） */
+/* 页眉/页脚预览条：绝对定位进合成区——页眉条 top=上边距（带顶），页脚条带底距纸底=下边距（top 内联给出），
+   不占正文流高 → 编辑态一页可用高 = 纸高 − 上下合成（边距+带+正文padding），与 Chromium 打印逐像素一致 */
+.sheet-hf { position: absolute; left: 76px; right: 76px; opacity: 0.85; }
+/* 页眉/页脚缺省时的悬停插入提示区：平时隐形，悬停纸张时出现虚线提示，双击插入空带 */
+.sheet-hf-hint { display: flex; align-items: center; justify-content: center; font-size: 11px; color: #9aa1ad; user-select: none; cursor: pointer; opacity: 0; transition: opacity 0.15s; }
+.sheet:hover .sheet-hf-hint { opacity: 1; }
+.sheet-hf-hint:hover { background: #E8EAF6; outline: 1px dashed #9FA8DA; color: #3949AB; }
+/* 页眉页脚编辑：双击可编辑区域进入（可编辑时悬停淡蓝提示），锁定的无任何按钮 */
+.sheet-hf.hf-editable, .hf-editor.hf-editable { cursor: pointer; }
+.sheet-hf.hf-editable:hover, .hf-editor.hf-editable:hover { background: #E8EAF6; }
+/* 页眉/页脚原位子编辑器（Word 同款，无对话框）：编辑态整区淡蓝底，无任何编辑条/按钮（奇偶设置在右键菜单） */
+.hf-editor.hf-editing { background: #E8EAF6; outline: 1px dashed #9FA8DA; cursor: text; }
+.hf-subeditor .ProseMirror { outline: none; min-height: 0; }
+/* PM schema 要求文档不能以表格结尾 → 子编辑器 DOM 尾部恒有一个空段落（预览 HTML 没有，差出一行高）。
+   编辑态把它藏起来对齐预览排版；用户真在里面打字时 :has 不再匹配、自动显现 */
+.hf-editor .ProseMirror > p:last-child:not(:only-child):has(> br:only-child) { display: none; }
+/* 页眉页脚子编辑器：编辑态排版与预览/打印逐像素一致（差别只剩选区/手柄等编辑反馈）。
+   .ProseMirror 的文档级规则（p 4pt 边距、table 8pt 边距+10.5pt、td #333 边框+4pt/6pt 内边距、th 灰底）
+   是为正文定的，这里按 .hf 预览样式（9pt、无边框、零内边距）逐条覆写——否则进编辑态整行变高变样 */
+.hf-editor .ProseMirror { font-size: inherit; line-height: inherit; }
+.hf-editor .ProseMirror p { margin: 0; }
+.hf-editor .ProseMirror table { margin: 0; font-size: inherit; }
+.hf-editor .ProseMirror th, .hf-editor .ProseMirror td { border: none; padding: 0; background: none; font-weight: normal; }
+/* 签名条在编辑态保持打印同款边框/内边距（与 .hf .sig-strip td 同值——同优先级靠后胜出，这里用更高优先级写死） */
+.hf-editor .ProseMirror .sig-strip td { border: 1px solid #999; padding: 1pt 4pt; }
+.hf-editor .ProseMirror .sig-strip .sig-role { background: #f0f2f5; }
+/* 标题栏同理：编辑态不被上面的 td 重置清掉网格线 */
+.hf-editor .ProseMirror .hf-title td { border: 1px solid #999; padding: 1pt 4pt; }
+/* 编辑中的页眉/页脚条：全不透 + 压过正文（内容撑高瞬间与正文有交叠，layout 重算后即分离） */
+.sheet-hf:has(.hf-editing) { opacity: 1; z-index: 6; }
+/* 间隙条原位编辑浮层：双击任意页的页眉/页脚间隙条，在该条正上方罩出同款子编辑器（sheet 坐标系，
+   随 zoom 自然缩放，无需 Teleport/坐标换算）；数据与 sheet 顶/底条同源，保存后所有页同步刷新。
+   编辑期间不做几何重算（不监听 @resize）——间隙装饰重绘会毁掉锚点；提交后由 sheet 条 RO/内容指纹统一刷新 */
+.hf-gap-edit { position: absolute; z-index: 20; background: #fff; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.28); border-radius: 2px; }
+.hf-gap-edit .hf-editor.hf-editing { background: #fff; outline: 1px solid #86b7fe; }
+/* 页间隙条里的页眉/页脚预览渲染在正文 .ProseMirror 内（widget 装饰）：正文档级规则会渗进预览条——
+   .ProseMirror table 的 font-size:10.5pt+margin:8pt 直接设在 table 上，压过 .hf.header 包装的字号继承
+   （EN 页眉 10pt→第 2 页起变 10.5pt；zh 12pt→10.5pt），.ProseMirror p 的 4pt 边距与 .hf p{margin:0}
+   同优先级且靠后胜出（页脚段落撑高、灰线纵坐标奇偶页错位）。sheet 顶/底条在 .ProseMirror 外不受影响
+   →"第 1 页改了、第 2 页起没改"（用户 2026-09-04 三连报根因；此前探针只量 .hf 包装元素没量 table 层）。
+   td 边框/内边距不用覆写：.hf .hf-title td / .hf .sig-strip td (0,2,1) 本来就压 .ProseMirror td (0,1,1)。
+   按 .hf-editor 编辑态同款思路只补 p/table 两条，.ProseMirror 前缀提级到 (0,2,1) 决定性胜出 */
+.ProseMirror .vp-gap-hf p { margin: 0; }
+.ProseMirror .vp-gap-hf table { margin: 0; font-size: inherit; }
+
+/* 页眉：标准名称 | 编号 | 章节（表格排版，.hf 上下文类由容器提供：sheet 条/页间隙条/打印帧包装） */
+.hf { width: 100%; font-size: 9pt; color: #444; font-family: SimSun, '宋体', serif; } /* 与正文同族（全文档宋体），打印侧 HF_STYLE 互指 */
+/* 英文文档（宿主 SectionedEditor lang="en" → 根 class lang-en）：Times 优先字体栈，
+   SimSun 兜底缺字形/残留中文；正文与页眉页脚同族切换，打印侧 render.js 按 doc.lang 同款处理。
+   EN 字号整体小半档：正文=页眉=11pt（视觉一致）；公司格 EN 加宽 32→39%（公司全称
+   11pt 加粗实测需 ~37% 零余量，39% 留 ~8px 防缩放取整贴边），中列 42→35% 让位；
+   H1 的 SimHei 对拉丁字形难看，EN 也用 Times 优先 */
+.lang-en .section-editor .ProseMirror { font-family: 'Times New Roman', Times, SimSun, '宋体', serif; font-size: 11pt; }
+.lang-en .section-editor .ProseMirror h1,
+.lang-en .section-editor .ProseMirror h2,
+.lang-en .section-editor .ProseMirror h3 { font-family: 'Times New Roman', Times, SimHei, '黑体', sans-serif; }
+.lang-en .hf { font-family: 'Times New Roman', Times, SimSun, '宋体', serif; }
+/* EN 页眉整体 10pt 让宽度——公司格 35% 是 10pt 加粗公司全称的实测下限不能再缩，
+   页码 15%（Page 88 of 88 @10pt），中列 50%（三列改版让宽防长题折行）。
+   与 render.js hfStyle('en') 内联覆盖互指，改动两边同步 */
+.lang-en .hf.header { font-size: 10pt; }
+.lang-en .hf .hf-title .hf-company { width: 35%; } /* EN 10pt 实测公司/dept 文案宽 33% 仅 5px 余量会折两行 → 回 35% */
+.lang-en .hf .hf-title .hf-doc { width: 50%; font-size: 9pt; }
+.lang-en .hf .hf-title .hf-page { width: 15%; } /* "Page 88 of 88" 实测 86px=12.6% + 余量 */
+/* PM 规范化会给 td 内文本包 <p>，UA 默认 1em 上下 margin 会把条撑高 24px——
+   预览/打印必须与编辑态（.hf-editor .ProseMirror p{margin:0}）同款归零，否则初始/编辑后/打印三个高度 */
+.hf p { margin: 0; }
+/* 页眉带 padding：上 3mm（页边距之下再呼吸）下 2mm——与正文间距=2mm+正文上padding，恒定不随内容变。
+   不带分隔线：标题栏表格自带下边框即视觉分隔；且间隙条通栏绘制（vp-gap-inner 负边距到纸边），
+   若线画在带元素上，第 2 页起会贯通纸边（第 1 页 sheet 条在页边距内）——两页不一致 */
+.hf.header { padding-top: 3mm; padding-bottom: 2mm; font-size: 11pt; } /* 页眉字号=正文 11pt（2026-09-07 用户：页眉正文同步 12→11）；页脚保持 9pt；打印侧 HF_STYLE 互指 */
+.hf-head { width: 100%; border-collapse: collapse; table-layout: fixed; } /* 旧版单行页眉（存量文档兼容） */
+.hf-head td { padding: 0; }
+.hf-c { text-align: center; } /* 子编辑器 round-trip 只保 class（classKeep），对齐一律用类不用内联 style */
+.hf-r { text-align: right; }
+.hf-std-name { font-weight: 600; }
+/* 页眉标题栏（3列×2行网格）：行1 公司 | 编号+标准名称(9pt 小字) | 页码；
+   行2 部门+文件类型 | 章节号+章节名称 | 版本号+二维码同格。列宽 zh 27/56/17、en 35/50/15。
+   挂 .hf 下提级：压住 .vp-gap 的样式隔离重置（同 .hf .sig-strip 套路） */
+.hf .hf-title { width: 100%; border-collapse: collapse; table-layout: fixed; color: #000; }
+/* overflow-wrap: 长标题/长编号（无断行机会的拉丁串）也能折行撑高行，而不是横向溢出 */
+.hf .hf-title td { border: 1px solid #999; padding: 1pt 4pt; height: 8.5mm; vertical-align: middle; overflow-wrap: anywhere; } /* 行高 6.5→7.5→8.5mm（用户 2026-08-28：行间距再加大） */
+.hf .hf-title .hf-logo { display: inline-block; width: 4.5mm; height: 4.5mm; vertical-align: -0.8mm; margin-right: 1.2mm; } /* 公司格小 logo（currentColor）；display:inline-block 防宿主全局 CSS（如 Tailwind preflight svg{display:block}）破内联对齐；对齐零点实测在 -0.6~-1.0 之间取 -0.8mm（残差 |0.1pt| 内） */
+.hf .hf-title .hf-company { width: 29%; font-weight: 700; white-space: nowrap; } /* nowrap：logo+10 字公司名钉死一行；11pt 实测 171px+缩放取整余量 ~8px → 29%（debug-header-widths 实测定稿，坑#八轮） */
+.hf .hf-title .hf-doc { width: 52%; font-weight: 700; } /* 行1：整份标准文件大名称（stdNo+stdName）一行；zh 字号随页眉基准 11pt（用户 2026-09-07），EN 覆写 9pt；中列最宽防长题折行 */
+.hf .hf-title .hf-chap { font-weight: 700; } /* 行2：章节号+章节名称（从正文 H1 上移），字号随页眉基准（zh 11pt / en 10pt）；列宽继承 .hf-doc 同列 */
+/* 中列两行间分隔线隐藏（2026-09-07 用户要求：标准名称行与章节行视觉连成一格）；border-collapse 下须上下两格都声明 none */
+.hf .hf-title td.hf-doc { border-bottom: none; }
+.hf .hf-title td.hf-chap { border-top: none; }
+.hf .hf-title .hf-page { width: 19%; font-weight: 700; white-space: nowrap; } /* 页码格加粗+nowrap：两位数页码"第88页 共88页"必须平铺一行（用户 2026-09-02）；11pt 实测 120px=17.6% + 取整余量 → 19% */
+.hf .hf-title .hf-qr { display: inline-block; width: 7mm; height: 7mm; vertical-align: middle; } /* 二维码与版本号同格（2026-09-07：不再 rowspan 独占列）；7mm 贴 8.5mm 行高不撑行（用户试过 1cm 嫌大）；inline-block 防宿主全局 CSS */
+.hf .hf-title .hf-ver { font-weight: 700; } /* 版本号 V001 加粗 + 同格二维码 */
+.hf .hf-title .hf-dept { font-weight: 700; }
+
+/* 页脚：奇偶不同版（奇数页签章行/偶数页联系方式+归属，段落排版无表格） */
+/* 页脚带 padding：上 2mm、下 3mm（带底距纸底还有下边距空白）。
+   灰分隔线画在内容段落上（.foot-line border-top）而不是带元素上：带元素被间隙条通栏绘制时线会贯通纸边，
+   内容里的线在各页都在页边距内、与正文同宽 */
+.hf.footer { padding-top: 2mm; padding-bottom: 3mm; }
+/* line-height 钉死 6mm（=签名图高）：奇偶页页脚内容盒同高 → 灰线纵坐标全局一致（底锚定带，否则奇数页图高线高） */
+.hf .foot-line { border-top: 1px solid #999; padding-top: 1.5mm; line-height: 6mm; }
+/* 旧版签名条（存量文档兼容，新模板已不用表格页脚） */
+.hf .sig-strip { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 9pt; }
+.hf .sig-strip td { border: 1px solid #999; padding: 1pt 4pt; text-align: center; height: 9mm; vertical-align: middle; }
+.hf .sig-strip .sig-role { background: #f0f2f5; width: 8%; }
+.hf .sig-strip .sig-val { width: 15%; color: #1d4ed8; } /* 签名墨色：与 standardTemplate 签名 SVG fill / render.js .sig-val 同源 #1d4ed8（印进审批版 PDF 的内容色，不随主题改） */
+.hf .sig-strip .sig-page { width: 10%; }
+.hf .sig-img { display: inline-block; height: 5.5mm; vertical-align: -1.4mm; } /* display:inline-block 防宿主全局 CSS 覆盖；5.5mm<行高6mm：签名图不撑大行盒，奇偶页脚内容盒严格同高（灰线纵坐标全局一致）；-1.4mm=middle 再降 0.79mm，让 SVG 内签名文字基线（viewBox y=21/28）落在标签汉字基线上 */
+/* 定宽占位槽：签章/传参前后字段宽度不变 → 标签位置两态不跳（用户 2026-08-28）。
+   槽宽 ≥ 内容最大宽：签名图 90:28 宽高比 × 5.5mm 高 = 17.7mm 恒定；日期 2026-08-24 ≈ 16mm；邮箱按默认公共邮箱 48mm。
+   inline-block 空槽高 0、坐基线上，6mm 行高由 .foot-line 钉死不受影响 */
+.hf .sig-slot { display: inline-block; width: 18mm; }
+.hf .date-slot { display: inline-block; width: 18mm; }
+.hf .email-slot { display: inline-block; width: 48mm; } /* 槽宽按常见公司邮箱实测 44.4mm 留 3.6mm 余量 */
+
+/* ========== 文档内容样式（编辑态与打印态共用，保证分页一致） ========== */
+/* H1=本文件（章节）编号+名称大标题：黑体（用户 2026-08-28）；打印侧 render-server 直接读本文件，自动同源 */
+.ProseMirror h1 { font-size: 16pt; text-align: center; margin: 10pt 0; font-family: SimHei, '黑体', sans-serif; }
+/* 文档内部链接（2026-09-09）：用户拍板与正文完全一致——中和 UA 默认蓝色下划线；仅 cursor:pointer 悬停提示。
+   本文件即 render.js sharedCss，编辑态/打印态同源；cursor 不影响打印 */
+.ProseMirror a { color: inherit; text-decoration: none; cursor: pointer; }
+.ProseMirror h2 { font-size: 14pt; margin: 10pt 0 6pt; break-after: avoid; }
+.ProseMirror h3 { font-size: 12.5pt; margin: 8pt 0 4pt; break-after: avoid; }
+.ProseMirror p { margin: 4pt 0; }
+.ProseMirror ul, .ProseMirror ol { margin: 4pt 0; padding-left: 24pt; }
+
+/* 自定义列表标记（编辑态与打印态共用本文件）：原生 list-style-type 覆盖不了 1）/（1）/<1> 这类格式，
+   用 list-style:none + CSS counter 的 ::before 实现；
+   注意 li 里的首个块是 <p>（block），inline ::before 会被挤成独占一行——
+   必须绝对定位挂进列表 padding 区（left 负值，与原生 outside 标记同位），li 开 position:relative */
+.ProseMirror ul.ul-dash, .ProseMirror ol.ol-paren, .ProseMirror ol.ol-pparen, .ProseMirror ol.ol-angle { list-style-type: none; }
+.ProseMirror ol.ol-paren, .ProseMirror ol.ol-pparen, .ProseMirror ol.ol-angle { counter-reset: olc; }
+.ProseMirror ul.ul-dash > li, .ProseMirror ol.ol-paren > li, .ProseMirror ol.ol-pparen > li, .ProseMirror ol.ol-angle > li { position: relative; }
+.ProseMirror ul.ul-dash > li::before { content: "–"; }
+.ProseMirror ol.ol-paren > li::before { counter-increment: olc; content: counter(olc) "）"; }
+.ProseMirror ol.ol-pparen > li::before { counter-increment: olc; content: "（" counter(olc) "）"; }
+.ProseMirror ol.ol-angle > li::before { counter-increment: olc; content: "<" counter(olc) ">"; }
+.ProseMirror ul.ul-dash > li::before,
+.ProseMirror ol.ol-paren > li::before,
+.ProseMirror ol.ol-pparen > li::before,
+.ProseMirror ol.ol-angle > li::before {
+    /* 右缘锚定在条目内容左缘：right:100% 而非 left 负值，标记再长也只向左生长、不换行不折行 */
+    position: absolute; right: 100%; margin-right: 0.25em; white-space: nowrap;
+}
+
+/* 题注段落（图片下方"图 N 说明"）：编号 CSS counter 自动生成，插删自动重排；按节各自编号（每节一个 ProseMirror 容器） */
+.ProseMirror { counter-reset: figcap; }
+.ProseMirror p.doc-caption { text-align: center; font-size: 10.5pt; color: #4b5563; margin: 2pt 0 8pt; }
+.ProseMirror p.doc-caption::before { counter-increment: figcap; content: "图 " counter(figcap) "　"; font-weight: 600; }
+
+.ProseMirror table {
+    border-collapse: collapse; width: 100%; margin: 8pt 0;
+    table-layout: fixed; font-size: 10.5pt;
+}
+.ProseMirror th, .ProseMirror td {
+    border: 1px solid #333; padding: 4pt 6pt;
+    vertical-align: middle; word-break: break-word;
+}
+.ProseMirror th { background: #e5e7eb; font-weight: 600; }
+/* 图片：不超纸宽；选中态描边（含裁剪后的 background 窗口 div）。
+   position:relative + z-index 6：描边画在图片盒外侧 2px，图片贴页底/分页符时 DOM 序在后的
+   白色页家具（vp-gap-fill/tail-fill 填白条）会盖住下缘描边（2026-09-11 复现：右缘蓝线在、下缘没有）；
+   提级到覆盖层（z-index:5）之上后四缘常显 */
+.ProseMirror img { max-width: 100%; height: auto; }
+.ProseMirror img.ProseMirror-selectednode,
+.ProseMirror .img-cropped.ProseMirror-selectednode { outline: 2px solid #3F51B5; position: relative; z-index: 6; }
+
+/* ========== CAD 图纸占位区（2026-09-23）：DOM 与 DocImage 同构，裁剪走 .cad-crop background 窗口 ========== */
+/* CAD 图标（用户提供字形，去红底单色化）：mask 只取字形 alpha，颜色随 currentColor。
+   圆角矩形描边（rect stroke）也在 mask 图形里——"黑色边框"随 currentColor 一起渲染。
+   mask 图形收进 CSS 变量做单一事实源——.pi-cad（按钮/菜单/弹窗标题）与空占位伪元素共用 */
+:root {
+    --cad-icon: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1024 1024'%3E%3Crect x='54' y='54' width='916' height='916' rx='218' fill='none' stroke='black' stroke-width='68'/%3E%3Cpath d='M250.794667 572.416H773.546667v37.489778H250.794667v-37.489778z'/%3E%3Cpath d='M624.071111 236.373333h37.347556v522.481778h-37.333334V236.373333z'/%3E%3Cpath d='M586.737778 535.139556h112.028444v111.857777h-112.028444v-111.857777zM324.366222 497.635556l92.060445-224.085334h34.176l98.133333 224.071111H512.568889l-27.960889-67.854222h-100.238222l-26.325334 67.854222h-33.692444z m69.176889-92.017778h81.265778l-25.016889-62.051556c-7.637333-18.858667-13.297778-34.346667-17.009778-46.478222a271.388444 271.388444 0 0 1-12.913778 42.808889l-26.325333 65.706667z'/%3E%3C/svg%3E");
+}
+.pi-cad {
+    display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -0.2em;
+    background-color: currentColor;
+    -webkit-mask: var(--cad-icon) center / contain no-repeat;
+    mask: var(--cad-icon) center / contain no-repeat;
+}
+/* 空占位（无 preview）：虚线框，双击开弹窗编辑（双击拦截在 SectionedEditor <main> 委托） */
+.cad-node-empty {
+    width: 100%; min-height: 120px; box-sizing: border-box;
+    display: flex; align-items: center; justify-content: center;
+    border: 1.5px dashed #9fa8da; border-radius: 4px; background: #f8fafc;
+    color: #94a3b8; font-size: 13px; cursor: default; user-select: none;
+    break-inside: avoid;
+}
+.cad-node-empty::before {
+    content: ""; width: 20px; height: 20px; margin-right: 8px; opacity: .6;
+    background-color: currentColor;
+    -webkit-mask: var(--cad-icon) center / contain no-repeat;
+    mask: var(--cad-icon) center / contain no-repeat;
+}
+/* 预览图/裁剪窗口：白底（PNG 快照自带白底，这里兜底透明降级）+ 防跨页劈开 */
+.cad-node, .cad-crop { break-inside: avoid; background-color: #fff; }
+[data-cad-drawing].ProseMirror-selectednode { outline: 2px solid #3F51B5; outline-offset: 1px; }
+
+/* ========== 图片浮动工具条（点击图片浮出：对齐/缩放/裁剪/删除） ========== */
+.img-menu {
+    position: fixed; z-index: 30; display: flex; align-items: center; gap: 2px;
+    padding: 4px 6px; background: #fff; border: 1px solid #d8dce2; border-radius: 8px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.18);
+    /* 定位/缩放全在 JS（positionBar 按缩放后尺寸算 left/top 并钳在纸面内）：transform-origin 左上，
+       transform: scale(zoom) 由内联 style 给——条随页面 zoom 等比缩放，大小观感与纸面一致 */
+    transform-origin: left top;
+}
+.img-menu .sep { width: 1px; height: 16px; background: #d8dce2; margin: 0 4px; }
+.img-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 3px;
+    min-width: 26px; height: 26px; padding: 0 5px;
+    border: none; border-radius: 5px; background: transparent; color: #374151;
+    font-size: 12px; cursor: pointer; white-space: nowrap; /* nowrap：窄屏下"自适应"三字不许竖排（用户 2026-09-04） */
+}
+.img-btn:hover { background: #f0f2f5; color: #111827; }
+.img-btn.on { background: #C5CAE9; color: #303F9F; }
+.img-btn.img-size { font-size: 11px; }
+.img-btn.img-label { font-size: 12px; }
+.img-btn.img-danger:hover { background: #fde8e8; color: #dc2626; }
+.img-btn .img-ico { width: 14px; height: 14px; } /* 裁剪图标（primeicons v7 无 crop 字形，内联 SVG） */
+
+/* ========== 就地裁剪态（Word 同款：控制点压在图上拖，窗口外压暗，原图保留） ========== */
+/* 压暗层容器：clip 到完整原图矩形，窗口 div 的超大 box-shadow 只染原图区域（不污染页面其他内容） */
+.crop-frame { position: fixed; z-index: 28; overflow: hidden; pointer-events: none; }
+.crop-win-shade { position: absolute; box-shadow: 0 0 0 9999px rgba(0,0,0,.45); }
+/* 裁剪窗口虚线框：可拖动平移 */
+.crop-win {
+    position: fixed; z-index: 29; border: 2px dashed #fff;
+    outline: 1px dashed rgba(0,0,0,.5); outline-offset: -1px;
+    cursor: move; box-sizing: border-box;
+}
+/* 8 向控制点：4 角 + 4 边（Word 黑色方点） */
+.crop-handle {
+    position: fixed; z-index: 30; width: 9px; height: 9px;
+    background: #1f2937; border: 1px solid #fff; border-radius: 1px;
+    transform: translate(-50%, -50%);
+    touch-action: none;
+}
+/* 跨页时表头重复 */
+.ProseMirror thead { display: table-header-group; }
+.ProseMirror tr { break-inside: avoid; }
+
+/* 字段节点 */
+.doc-field { display: inline-block; position: relative; }
+/* 宽度镜像：与 input 同上下文继承字体，fitSize 实测文本像素宽（脱流不占位，visibility 隐藏）。
+   width:max-content 必须显式给——absolute 默认 shrink-to-fit 会被包含块（.doc-field=input 当前宽）钳住，
+   那样镜像宽永远超不过 input 当前宽，输入变长时宽度再也涨不动 */
+.doc-field-mirror { position: absolute; left: 0; top: 0; width: max-content; visibility: hidden; white-space: pre; pointer-events: none; height: 0; overflow: hidden; }
+.doc-field-input {
+    border: none; border-bottom: 1px solid #3F51B5; background: #E8EAF6;
+    font: inherit; padding: 0 2px; min-width: 2em; color: #303F9F;
+}
+.doc-field-input:disabled { background: transparent; border-bottom-color: transparent; color: inherit; }
+.doc-field-locked .doc-field-input { border-bottom-color: transparent; background: transparent; color: inherit; cursor: default; min-width: 0; padding: 0; }
+/* 锁定字段（正文顶部章节号/名称）=直接文本：无下划线无底色，空值仅留灰占位（用户 2026-08-28 十四轮） */
+.doc-field-locked .doc-field-input::placeholder { color: #9ca3af; }
+
+/* 分页符：编辑态不显示任何标记——页间隙本身已经表达了分页（Word 页面视图同款行为）；
+   break-after: page 保留给定版打印用。节点高度归零，不影响整页高度记账 */
+.doc-page-break { break-after: page; height: 0; margin: 0; border: none; overflow: hidden; }
+
+/* 正文内签名区（备用，部分版式可能需要） */
+.doc-signature { display: inline-block; width: 24%; margin: 6pt 0.5% 0 0; break-inside: avoid; }
+.doc-signature-box { border: 1px solid #333; height: 70pt; display: flex; flex-direction: column; }
+.doc-signature-label { border-bottom: 1px solid #333; text-align: center; padding: 2pt; background: #e5e7eb; font-weight: 600; }
+.doc-signature-empty { flex: 1; display: flex; align-items: center; justify-content: center; color: #9ca3af; }
+.doc-signature-img { flex: 1; object-fit: contain; max-height: 48pt; }
+
+/* ========== 工具栏增补：字体/字号/插入节 ========== */
+.font-select.p-select { max-width: 128px; font-size: 12px; }
+.font-select.size.p-select { max-width: 84px; }
+.font-select .p-select-label { font-size: 12px; padding: 4px 8px; }
+.insert-section { position: relative; }
+.insert-section-menu {
+    position: absolute; top: calc(100% + 4px); right: 0; z-index: 20;
+    background: #fff; border: 1px solid #d8dce2; border-radius: 6px;
+    box-shadow: 0 4px 16px rgba(0,0,0,.15); padding: 4px; display: flex; flex-direction: column;
+}
+.insert-section-menu button {
+    white-space: nowrap; text-align: left; padding: 6px 12px; font-size: 13px;
+    border: none; border-radius: 4px; background: transparent; cursor: pointer; color: #374151;
+}
+.insert-section-menu button:hover { background: #f0f2f5; }
+
+/* ========== 表格操作手柄 + 弹出菜单（tiptap pro / PrimeVue 风格） ========== */
+/* 手柄：当前单元格右边线中间的小竖片，点击弹出 TieredMenu */
+.cell-handle {
+    position: fixed; z-index: 30; width: 14px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px solid #9FA8DA; border-radius: 7px;
+    color: #3F51B5; font-size: 9px; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15); user-select: none;
+    /* Teleport 到 body 跳出了 zoom 容器 → 图标不随页面缩放；JS 按实测 zoom 写 transform: scale。
+       origin 必须 left top：缩放后视觉盒左上角=定位算式给定的 left/top（定位按缩放后尺寸算好）。
+       若用 left center，缩放绕"未缩放布局盒"的中心进行 → 缩放越小手柄偏离单元格中线越多。
+       ⚠ 尺寸改动必须同步 TableFloatingMenu.vue 的 HANDLE_W/HANDLE_H（定位算式按它算居中） */
+    transform-origin: left top;
+}
+.cell-handle:hover { background: #3F51B5; color: #fff; border-color: #3F51B5; }
+/* 表格整体手柄：左上角外侧小方片（Notion 同款），点击弹出对齐/适应版心/删表菜单 */
+.table-handle {
+    position: fixed; z-index: 30; width: 16px; height: 16px;
+    display: flex; align-items: center; justify-content: center;
+    background: #fff; border: 1px solid #9FA8DA; border-radius: 5px;
+    color: #3F51B5; font-size: 9px; cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0,0,0,.15); user-select: none;
+    /* ⚠ 尺寸改动必须同步 TableFloatingMenu.vue 的 TABLE_HANDLE */
+    transform-origin: left top;
+}
+.table-handle:hover { background: #3F51B5; color: #fff; border-color: #3F51B5; }
+/* 多选单元格：选区整体外边框高亮（覆盖层描边） */
+.cell-selection-outline {
+    position: fixed; z-index: 29; pointer-events: none;
+    border: 1.5px solid #3F51B5; border-radius: 2px;
+    box-shadow: 0 0 0 1px rgba(63,81,181,.15);
+}
+/* 背景色子菜单的色点 */
+.tm-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 1px solid #d1d5db; display: inline-block; margin-right: 8px; flex: none;
+}
+/* 弹出菜单里的危险项 */
+.p-tieredmenu .tm-danger .p-tieredmenu-item-label,
+.p-tieredmenu .tm-danger .p-tieredmenu-item-icon { color: #dc2626; }
+
+/* 列宽拖拽功能保留，蓝色竖线隐藏（用户反馈无用） */
+.ProseMirror .column-resize-handle { display: none; }
+/* 拖选多个单元格时的选中高亮（Table 扩展自带 class） */
+.ProseMirror .selectedCell { background: #C5CAE9 !important; }
+/* 光标所在单元格高亮：inset 阴影，避免被背景色 inline style 盖住 */
+.ProseMirror td.active-cell, .ProseMirror th.active-cell { box-shadow: inset 0 0 0 1.5px #3F51B5; }
+.ProseMirror.resize-cursor { cursor: col-resize; }
+
+/* ========== 视觉分页：页间隙（装饰，不进 JSON，不影响定版渲染） ========== */
+.vp-gap { position: relative; user-select: none; }
+.vp-gap-inner { background: #e9ebef; } /* 与编辑区底色一致的"页间灰缝" */
+.vp-gap-fill { background: #fff; } /* 本页未用尽的空白补齐：把页脚条钉在页底，每页都是整页 */
+.vp-gap-margin { background: #fff; } /* 灰缝上下的纸面边距白条：页与页之间是"两张纸"，灰缝恰在纸界 */
+.vp-tail-fill { background: #fff; } /* 末页填充：把 sheet 底部页脚条钉在最后一页页底 */
+.vp-gap-band { height: 28px; display: flex; align-items: center; justify-content: center; }
+/* 样式隔离：页间隙/末页填充在 .ProseMirror 内部，正文的 table/td/p/行高规则会渗进来把签名条撑高。
+   以下重置与正文规则同优先级、靠文件顺序在后而胜；.hf .sig-strip 等组件规则优先级更高，不受影响 */
+.vp-gap { line-height: normal; }
+.vp-gap p { margin: 0; }
+.vp-gap table { margin: 0; }
+.vp-gap th, .vp-gap td { padding: 0; border: none; }
+.vp-gap-hf { background: #fff; opacity: 0.85; } /* 与 .sheet-hf 一致：无额外 padding，保证间隙里的条与纸张顶/底预览条同高 */
+/* 超高表格不硬拆时的跨页虚线指示（近似，定版以打印为准） */
+.vp-table-split { box-shadow: inset 0 3px 0 -1px #9FA8DA; }
+/* 超高表格软分页：行加高造出的间隙空间上覆盖的完整页间隙视觉（与 .vp-gap 同结构，pointer-events 无） */
+.section-editor .ProseMirror { position: relative; } /* .vp-overlays 按 view.dom 内容坐标绝对定位 */
+.vp-overlays { position: absolute; left: 0; right: 0; top: 0; height: 0; pointer-events: none; z-index: 5; user-select: none; }
+.vp-ovl { position: absolute; left: 0; right: 0; }
+/* 与 .vp-gap 同款样式隔离：覆盖层也在 .ProseMirror 内部 */
+.vp-ovl { line-height: normal; }
+.vp-ovl p { margin: 0; }
+.vp-ovl table { margin: 0; }
+.vp-ovl th, .vp-ovl td { padding: 0; border: none; }
+/* 软分页成功的表（VisualPagination 打 data-vp-padded 装饰）：全表单元格顶对齐——
+   middle 居中会让内容随衬垫加高段下沉 add/2 落进盖白区（图片下边框/跨行格内容被盖）。
+   装饰挂在表节点外层 DOM（node view 时是 wrapper div），故用后代选择器而非 table[...] */
+.ProseMirror [data-vp-padded] td, .ProseMirror [data-vp-padded] th { vertical-align: top; }
