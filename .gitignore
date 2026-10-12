@@ -4,3 +4,4 @@ dist-lib/
 server/out/
 tests/out/
 *.log
+*.tgz

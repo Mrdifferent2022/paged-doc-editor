@@ -1,0 +1,25 @@
+# 一条命令起渲染服务：docker compose up --build
+# 渲染 API 即 http://localhost:8200/render（POST { sections, lang? } → application/pdf）
+services:
+  render:
+    build: .
+    ports:
+      - "8200:8200"
+    # 中文渲染已在镜像内经 fontconfig 映射到 Noto CJK，无需额外字体
+    environment:
+      PORT: 8200
+      HOST: 0.0.0.0
+    restart: unless-stopped
+
+  # —— 未来版本：MinIO 配套存储服务（设计见 docs/storage-service-design.md）——
+  # minio:
+  #   image: minio/minio:latest
+  #   command: server /data --console-address ":9001"
+  #   ports: ["9000:9000", "9001:9001"]
+  #   environment:
+  #     MINIO_ROOT_USER: minioadmin
+  #     MINIO_ROOT_PASSWORD: minioadmin
+  #   volumes:
+  #     - minio-data:/data
+# volumes:
+#   minio-data:

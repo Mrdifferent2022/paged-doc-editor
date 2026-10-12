@@ -378,7 +378,10 @@ export async function renderDocument(sections, opts = {}) {
         // "Running as root without --no-sandbox is not supported"；
         // disable-dev-shm-usage 防止容器 /dev/shm 过小时渲染进程崩溃
         const puppeteer = await loadPuppeteer();
-        browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
+        // PUPPETEER_EXECUTABLE_PATH：用系统 Chromium（如 Docker 镜像 apt 装的 chromium，
+        // 配合 PUPPETEER_SKIP_DOWNLOAD=1 不下载自带浏览器）；缺省用 puppeteer 自带
+        const executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || undefined;
+        browser = await puppeteer.launch({ headless: true, executablePath, args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
         const merged = await PDFDocument.create();
 
         // 第一遍：分节渲染（各节纸张/页眉页脚/有效边距不同，逐节测量 + 渲染）

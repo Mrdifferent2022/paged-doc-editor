@@ -4,9 +4,10 @@
   "type": "module",
   "description": "Paginated document editor (Tiptap multi-section layout, WYSIWYG page editing + server-side finalized PDF rendering)",
   "license": "MIT",
+  "author": "Mrdifferent2022",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/paged-doc-editor.git"
+    "url": "https://github.com/Mrdifferent2022/paged-doc-editor.git"
   },
   "keywords": [
     "tiptap",
@@ -17,18 +18,35 @@
     "vue3"
   ],
   "exports": {
-    ".": "./src/editor/index.js",
+    ".": "./dist-lib/paged-doc-editor.js",
     "./styles": "./src/editor/styles/editor.css",
     "./tiptap": "./src/editor/tiptap/index.js",
     "./templates": "./src/editor/templates/standardTemplate.js",
-    "./render": "./src/server/render.js"
+    "./render": "./src/server/render.js",
+    "./server": "./src/server/render.js"
+  },
+  "files": [
+    "dist-lib",
+    "src/editor",
+    "src/server",
+    "server",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "bin": {
+    "paged-doc-render": "server/render-server.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "build:lib": "vite build --config vite.lib.config.js",
     "render-server": "node server/render-server.js",
-    "test": "node tests/check-layout.mjs && node tests/check-table-render.mjs && node tests/check-img-render.mjs && node tests/check-list-render.mjs"
+    "test": "node tests/check-layout.mjs && node tests/check-table-render.mjs && node tests/check-img-render.mjs && node tests/check-list-render.mjs",
+    "prepublishOnly": "npm run build:lib"
   },
   "peerDependencies": {
     "@primevue/themes": "^4.2.4",
@@ -58,12 +76,12 @@
     "qrcode": "^1.5.4"
   },
   "optionalDependencies": {
+    "express": "^4.21.0",
     "puppeteer": "^24.0.0"
   },
   "devDependencies": {
     "@primevue/themes": "^4.5.4",
     "@vitejs/plugin-vue": "^5.2.0",
-    "express": "^4.21.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.5",
     "vite": "^5.4.0",

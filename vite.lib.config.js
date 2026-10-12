@@ -6,9 +6,10 @@ import path from 'node:path';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /**
- * 库构建配置（npm run build:lib）。
- * 推荐集成方式：源码级 file: 依赖（宿主同为 Vite+Vue3，零构建、迭代顺）；
- * 需要 dist 产物（发 registry 等）时用本配置。
+ * 库构建配置（npm run build:lib，npm 发布的默认入口产物）。
+ * external 全量外置：tiptap/mlightcad/element-plus/qrcode/primevue 等依赖全部留给宿主
+ * node_modules 解析（它们都在 package.json dependencies/peerDependencies，且 import 均为动态），
+ * dist-lib 保持 ~600KB 不捆 vendor。
  */
 export default defineConfig({
     plugins: [vue()],
@@ -21,7 +22,7 @@ export default defineConfig({
             fileName: 'paged-doc-editor'
         },
         rollupOptions: {
-            external: ['vue', /^@tiptap\//],
+            external: ['vue', /^@tiptap\//, /^@mlightcad\//, 'element-plus', 'qrcode', 'primevue', /^@primevue\//, 'primeicons'],
             output: {
                 assetFileNames: 'style.css'
             }

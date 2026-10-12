@@ -42,6 +42,58 @@ npm run render-server  # 渲染服务：http://localhost:8200
 
 然后在 demo 页右键 →「定版预览 / 导出 PDF」，即可得到带页眉页脚、全局页码、签章的定版 PDF。
 
+## npm 安装使用
+
+```bash
+npm install paged-doc-editor
+# peer 依赖（你的项目大概率已有）：
+npm install vue primevue primeicons @primevue/themes
+```
+
+```js
+import { SectionedEditor, buildTemplateSections, fillParams, applySignatures } from 'paged-doc-editor';
+import 'paged-doc-editor/styles';
+```
+
+子路径导出：`paged-doc-editor/tiptap`（扩展清单）、`/templates`（模板与签章函数）、
+`/render`（服务端渲染管线，Node 侧用）。
+
+> 维护者发布：`npm publish --access public`（`prepublishOnly` 会自动先跑 `build:lib`）。
+
+## 渲染服务独立部署
+
+渲染服务是可选的独立进程（只有需要"服务端导出定版 PDF"时才起）：
+
+```bash
+# 方式一：装了包之后直接跑 bin
+npx paged-doc-render                 # 默认 0.0.0.0:8200
+paged-doc-render --port 9000         # 命令行指定端口
+
+# 方式二：环境变量
+PORT=9000 HOST=127.0.0.1 paged-doc-render
+```
+
+| 环境变量 | 默认 | 说明 |
+|---|---|---|
+| `PORT` | 8200 | 监听端口（也可用 `--port`） |
+| `HOST` | 0.0.0.0 | 监听地址 |
+| `PUPPETEER_EXECUTABLE_PATH` | （空=puppeteer 自带 Chromium） | 指定系统 Chromium 路径 |
+
+API：`POST /render`，body `{ sections, lang?, docBaseUrl?, siteBaseUrl? }` → `application/pdf`。
+
+## Docker 部署
+
+```bash
+docker build -t paged-doc-render .
+docker run -p 8200:8200 paged-doc-render
+# 或：docker compose up --build
+```
+
+镜像基于 `node:22-bookworm-slim`，内置系统 Chromium 与 **Noto CJK** 开源字体
+（`docker/fonts.conf` 把 CSS 里的 SimSun/SimHei/KaiTi 字体名映射到 Noto——
+镜像不含任何专有字体，可放心分发）。`docker-compose.yml` 里预留了 MinIO 注释块，
+配套存储服务设计见 [docs/storage-service-design.md](docs/storage-service-design.md)。
+
 ## 作为库集成
 
 ```js
